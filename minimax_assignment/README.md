@@ -14,7 +14,7 @@ Program a solution in the file player.py in the provided space for doing so. It 
 different files if player.py imports correctly and without errors each of them.
 
 # Installation
-The code runs in Python 3.7 AMD64.
+The code runs in Python 3.7 AMD64 or Python 3.6 AMD64.
 
 You should start with a clean virtual environment and install the
 requirements for the code to run.
@@ -23,10 +23,13 @@ In UNIX, in the skeleton directory, run:
 
 ```
 $ sudo pip install virtualenvwrapper
+$ export VIRTUALENVWRAPPER_PYTHON=<path/to/python3.X>
 $ . /usr/local/bin/virtualenvwrapper.sh
-$ mkvirtualenv -p /usr/bin/python3.7 fishingderby
+$ mkvirtualenv -p /usr/bin/python3.X fishingderby
 (fishingderby) $ pip install -r requirements.txt
 ```
+
+changing X for 6 or 7, depending if you want to use Python 3.6 or Python 3.7, respectively. In my case, the path to Python 3.X is /usr/bin/python3.X
 
 In Windows, in the skeleton directory, run:
 
@@ -37,12 +40,14 @@ $ pip install virtualenvwrapper-win
 And then close and open a new terminal.
 
 ```
-$ mkvirtualenv -p C:\Users\<YourWindowsUser>\AppData\Local\Programs\Python\Python37\bin\python.exe fishingderby
+$ mkvirtualenv -p C:\Users\<YourWindowsUser>\AppData\Local\Programs\Python\Python3X\bin\python.exe fishingderby
 (fishingderby) $ pip install -r requirements_win.txt
 ```
 
+changing X for 6 or 7, depending if you want to use Python 3.6 or Python 3.7, respectively.
+
 In Mac OS X:
-1. Install **python 3.7**
+1. Install **python 3.7** or **python 3.6**
 
    https://www.python.org/downloads/mac-osx/
 
@@ -61,7 +66,7 @@ In Mac OS X:
    $ which virtualenvwrapper.sh
    ```
 
-   For example, in my machine, the location of my virtualenvwrapper.sh is `/Library/Frameworks/Python.framework/Versions/3.7/bin/virtualenvwrapper.sh`
+   For example, in my machine, the location of my virtualenvwrapper.sh is `/Library/Frameworks/Python.framework/Versions/3.X/bin/virtualenvwrapper.sh`, where instead of X there is a 6 or a 7, depending if I use Python 3.6 or Python 3.7, respectively.
 
    * Modify **.bash_profile** file
 
@@ -75,11 +80,13 @@ In Mac OS X:
 
      ```
      export WORKON_HOME=$HOME/.virtualenvs
-     export VIRTUALENVWRAPPER_SCRIPT=/Library/Frameworks/Python.framework/Versions/3.7/bin/virtualenvwrapper.sh
-     export VIRTUALENVWRAPPER_PYTHON=/Library/Frameworks/Python.framework/Versions/3.7/bin/python3
-     export VIRTUALENVWRAPPER_VIRTUALENV=/Library/Frameworks/Python.framework/Versions/3.7/bin/virtualenv
-     source /Library/Frameworks/Python.framework/Versions/3.7/bin/virtualenvwrapper.sh
+     export VIRTUALENVWRAPPER_SCRIPT=/Library/Frameworks/Python.framework/Versions/3.X/bin/virtualenvwrapper.sh
+     export VIRTUALENVWRAPPER_PYTHON=/Library/Frameworks/Python.framework/Versions/3.X/bin/python3
+     export VIRTUALENVWRAPPER_VIRTUALENV=/Library/Frameworks/Python.framework/Versions/3.X/bin/virtualenv
+     source /Library/Frameworks/Python.framework/Versions/3.X/bin/virtualenvwrapper.sh
      ```
+
+     changing X for 6 or 7, depending if you want to use Python 3.6 or Python 3.7, respectively.
 
      Finally, to make our modification work, type in:
 
@@ -111,10 +118,12 @@ In Mac OS X:
 
    ```
    $ . /Library/Frameworks/Python.framework/Versions/3.7/bin/virtualenvwrapper.sh
-   $ mkvirtualenv -p /Library/Frameworks/Python.framework/Versions/3.7/bin/python3.7 fishingderby
+   $ mkvirtualenv -p /Library/Frameworks/Python.framework/Versions/3.X/bin/python3.X fishingderby
    ```
 
-   **Note:** make sure to find the path of your python 3.7. You can use `$ which python3.7` to do so. For example, in my machine, the path of my python 3.7 is `/Library/Frameworks/Python.framework/Versions/3.7/bin/python3.7`.
+   changing X for 6 or 7, depending if you want to use Python 3.6 or Python 3.7, respectively.
+
+   **Note:** make sure to find the path of your python 3.6 or python 3.7. You can use `$ which python3.X` to do so. For example, in my machine, the path of my python 3.X is `/Library/Frameworks/Python.framework/Versions/3.X/bin/python3.X`.
 
    * Go to the skeleton directory and run:
 

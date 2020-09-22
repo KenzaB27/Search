@@ -5,7 +5,12 @@ import random
 from kivy.clock import Clock
 from kivy.core.window import Window
 
-import opponent
+import platform
+_version_ = int(platform.python_version_tuple()[1])
+if _version_ == 6:
+    import opponent36 as opponent 
+elif _version_ == 7:
+    import opponent37 as opponent
 
 from fishing_game_core.app import FishingDerby, FishingDerbyApp, Fishes, PrintScore2Players, GamesWithBoats
 from fishing_game_core.game_tree import Node

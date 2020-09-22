@@ -382,7 +382,7 @@ class Node:
         if not 0 <= pos_y < space_subdivisions:
             pos_y = pos[1]
         if adv_pos is not None:
-            if ((pos[0] < adv_pos[0]) ^ (pos_x < adv_pos[0])) or (pos_x == adv_pos[0]):
+            if pos_x == adv_pos[0]:
                 return pos[0], pos_y
 
         return pos_x, pos_y

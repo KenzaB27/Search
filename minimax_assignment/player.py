@@ -4,7 +4,8 @@ import random
 from fishing_game_core.game_tree import Node
 from fishing_game_core.player_utils import PlayerController
 from fishing_game_core.shared import ACTION_TO_STR
-from utils import alpha_beta
+from utils import *
+
 
 class PlayerControllerHuman(PlayerController):
     def player_loop(self):
@@ -67,13 +68,19 @@ class PlayerControllerMinimax(PlayerController):
           ...
           'fish5': {'score': -10, 'type': 4},
           'game_over': False }
-        
+
         Please note that the number of fishes and their types is not fixed between test cases.
         """
-        self.initial_data = initial_data
+        if initial_data['game_over']:
+            return {}
 
+        minimax_model = {}
+        for key in initial_data:
+            if key != 'game_over':
+                fish_id = int(key.replace('fish', ''))
+                minimax_model[fish_id] = initial_data[key]
         # EDIT THIS METHOD TO RETURN A MINIMAX MODEL ###
-        return None
+        return minimax_model
 
     def search_best_next_move(self, model, initial_tree_node):
         """
@@ -91,12 +98,11 @@ class PlayerControllerMinimax(PlayerController):
         
         # NOTE: Don't forget to initialize the children of the current node 
         #       with its compute_and_get_children() method!
-        # print(initial_tree_node)
-        print(initial_tree_node)
-        _ , next_state = alpha_beta(initial_tree_node, 2, float('-inf'), float('+inf'), initial_tree_node.player)
-        # random_move = random.randrange(5)
-        print(next_state.parent)
-        print(next_state.move)
-        print(next_state.state)
 
-        return ACTION_TO_STR[0]
+        # initial_tree_node.move
+
+        _, next_state = minimax(initial_tree_node, 4, float('-inf'), float('inf'), initial_tree_node.state.player, model)
+        return ACTION_TO_STR[next_state.move]
+
+        # random_move = random.randrange(5)
+        # return ACTION_TO_STR[random_move]
