@@ -101,7 +101,9 @@ class PlayerControllerMinimax(PlayerController):
 
         # initial_tree_node.move
 
-        _, next_state = minimax(initial_tree_node, 4, float('-inf'), float('inf'), initial_tree_node.state.player, model)
+        ut, next_state = minimax(initial_tree_node, 4, float('-inf'), float('inf'), initial_tree_node.state.player, model)
+
+        print('final', ut, 'with move', next_state.move)
         return ACTION_TO_STR[next_state.move]
 
         # random_move = random.randrange(5)
