@@ -9,134 +9,39 @@ def transition(node):
     return node.compute_and_get_children()
 
 
-# def utility(player, state, model):
-#     hook_position = state.hook_positions[player]
-#     all_distance = 0
-   
-#     for fish_id in model:
-#         if fish_id not in state.fish_positions:
-#             continue
-
-#         coef = 1 / model[fish_id]['score']# if model[fish_id]['score'] > 0 else -model[fish_id]['score'] + 1000
-        
-#         fish_position = state.fish_positions[fish_id]
-#         d = (fish_position[0] - hook_position[0])**2 + (fish_position[1] - hook_position[1])**2
-        
-#         d *= coef
-#         all_distance += d
-     
-#     return all_distance
-
-def utility(player, state, model):
+def utility(player, state):
     hook_position = state.hook_positions[player]
-    min_distance = float('inf')
-    min_distance_2 = float('inf')
+    fish_positions = state.fish_positions
+    fish_scores = state.fish_scores
+    score_green, score_red = state.get_player_scores()
+    distances = []
+    best_score = max(fish_scores.values())
+    caugh_fish_id = state.player_caught[player]
+    if caugh_fish_id != -1 and best_score - fish_scores[caugh_fish_id] <= 2:
+        return (100 if player == MAX else -100)
+    for fish_id in fish_positions:
+        fish_position = fish_positions[fish_id]
+        if best_score - fish_scores[fish_id] <= 5:
+            distances.append((fish_position[0] - hook_position[0])**2 +
+                             (fish_position[1] - hook_position[1])**2)
+    if not distances:
+        return score_green - score_red
+    min_distance = min(distances)
+    h = - best_score * min_distance if player == MAX else min_distance/best_score
+    # print('heuristic', h)
+    return h + score_green - score_red
 
-    max_score = 0
-    best_type = None
-    second_best_type = None
-
-    type_scores = {}
-    for remaining_fish in state.fish_positions.keys():
-        if model[remaining_fish]['score'] > 0:
-            type_scores[model[remaining_fish]['type']] = model[remaining_fish]['score']
-
-    type_scores = {k: v for k, v in sorted(type_scores.items(), key=lambda  item: item[1])}
-    if len(type_scores) > 0:
-        best_type = list(type_scores.keys())[0]
-    if len(type_scores) > 1:
-        second_best_type = list(type_scores.keys())[1]
-
-   
-    for fish_id in model:
-        if fish_id not in state.fish_positions or (model[fish_id]['type'] != best_type and model[fish_id]['type'] != second_best_type):
-            continue
-
-        fish_position = state.fish_positions[fish_id]
-        d = abs(fish_position[0] - hook_position[0]) + abs(fish_position[1] - hook_position[1])
-
-        if d == 0:# and state.player_caught[player] == fish_id:
-            print(fish_position, hook_position)
-
-        if model[fish_id]['type'] == best_type:
-            min_distance = min(min_distance, d)
-        elif model[fish_id]['type'] == second_best_type:
-            min_distance_2 = min(min_distance_2, d)
-     
-    total_min = min(min_distance, min_distance_2)
-    if total_min == 0:
-        return 1
-    return 1 / total_min
-
-# def utility(player, state, model):
-#     hook_position = state.hook_positions[player]
-#     min_distance = float('inf')
-
-#     max_score = 0
-#     best_type = None
-#     for values in model.values():
-#         if values['score'] > max_score:
-#             max_score = values['score']
-#             best_type = values['type']
-   
-#     closest_fish = None
-#     for fish_id in state.fish_positions:
-#         # if model[fish_id]['type'] != best_type:
-#         #     continue
-
-#         fish_position = state.fish_positions[fish_id]
-#         d = (fish_position[0] - hook_position[0])**2 + (fish_position[1] - hook_position[1])**2
-
-#         if d < min_distance:
-#             min_distance = min(min_distance, d)
-#             closest_fish = fish_id
-
-#     if closest_fish and model[closest_fish]['score'] < 0:
-#         return 0
-    
-#     if min_distance == 0:
-#         return 1
-
-#     return 1 / min_distance
-
-# def utility(player, state, model):
-#     hook_position = state.hook_positions[player]
-#     min_distance = float('inf')
-   
-#     for fish_id in model:
-#         if fish_id not in state.fish_positions:
-#             continue
-
-#         coef = 1 / model[fish_id]['score'] if model[fish_id]['score'] > 0 else -model[fish_id]['score'] + 1000
-        
-#         fish_position = state.fish_positions[fish_id]
-#         d = (fish_position[0] - hook_position[0])**2 + (fish_position[1] - hook_position[1])**2
-        
-#         d *= coef
-#         min_distance = min(min_distance, d)
-     
-#     return -min_distance
-
-# def utility(player, state, model):
-#     opponent_scores = state.player_scores[1 - player]
-#     own_scores = state.player_scores[player]
-
-#     fish_id = state.player_caught[player]
-#     if fish_id != -1 and model[fish_id]['score'] < 0:
-#         opponent_scores -= model[fish_id]['score']
-#         own_scores -= model[fish_id]['score']
-#     return own_scores - opponent_scores
-
-def minimax(node, depth, alpha, beta, player, model):
+def minimax(node, depth, player, model):
     if player == MAX:
-        return search_max(node, depth, alpha, beta, model)
+        return search_max(node, depth, float('-inf'), float('+inf'), model)
     else:
-        return search_min(node, depth, alpha, beta, model)
+        return search_min(node, depth, float('-inf'), float('+inf'), model)
 
 def search_max(node, depth, alpha, beta, model):
+    # print('depth max', depth)
     children = transition(node)
     if depth == 0 or not children:
-        return utility(MAX, node.state, model), None
+        return utility(MAX, node.state), None
 
     v = float('-inf')
     best_child = None
@@ -147,6 +52,7 @@ def search_max(node, depth, alpha, beta, model):
             best_child = child
 
         if beta <= v:
+            # print('max pruned')
             break
 
         alpha = max(alpha, v)
@@ -154,9 +60,11 @@ def search_max(node, depth, alpha, beta, model):
     return v, best_child
 
 def search_min(node, depth, alpha, beta, model):
+    # print('depth min', depth)
+
     children = transition(node)
     if depth == 0 or not children:
-        return utility(MIN, node.state, model), None
+        return utility(MIN, node.state), None
 
     v = float('inf')
     best_child = None
@@ -167,6 +75,7 @@ def search_min(node, depth, alpha, beta, model):
             best_child = child
 
         if v <= alpha:
+            # print('min pruned')
             break
 
         beta = min(beta, v)
