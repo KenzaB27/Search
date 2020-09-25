@@ -5,7 +5,13 @@ from fishing_game_core.game_tree import Node
 from fishing_game_core.player_utils import PlayerController
 from fishing_game_core.shared import ACTION_TO_STR
 from utils import *
+from time import time
+from collections import Counter
+# import itertools.groupby
 
+TIMEOUT = 65*1e-3
+MAX_STATE_LOG = 8
+MAX_STATE_REPEATS = 4
 
 class PlayerControllerHuman(PlayerController):
     def player_loop(self):
@@ -26,6 +32,8 @@ class PlayerControllerHuman(PlayerController):
 
 
 class PlayerControllerMinimax(PlayerController):
+    search_depth = 3
+    next_moves = []
 
     def __init__(self):
         super(PlayerControllerMinimax, self).__init__()
@@ -101,8 +109,15 @@ class PlayerControllerMinimax(PlayerController):
 
         # initial_tree_node.move
 
-        ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player, model)
-        return ACTION_TO_STR[next_state.move]
+        ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player, model, self.next_moves.copy())
 
-        # random_move = random.randrange(5)
-        # return ACTION_TO_STR[random_move]
+        for child in next_state:
+            if child and len(self.next_moves) < MAX_STATE_LOG:
+                self.next_moves.append(child.move)
+    
+        next_move = self.next_moves.pop(0)
+        counter = Counter(self.next_moves)
+        if max(counter.values()) >= MAX_STATE_REPEATS:
+            self.next_moves = []
+        
+        return ACTION_TO_STR[next_move]

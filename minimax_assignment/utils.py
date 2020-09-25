@@ -5,6 +5,12 @@ import random
 MAX = 0
 MIN = 1
 
+def order_children(children, player, desc):
+    sorted_children = sorted(children, key=lambda child: child.state.get_player_scores()[player], reverse=desc)
+    sorted_children = sorted(sorted_children, key=lambda child: child.move)
+    return sorted_children
+
+
 def transition(node):
     return node.compute_and_get_children()
 
@@ -31,25 +37,31 @@ def utility(player, state):
     # print('heuristic', h)
     return h + score_green - score_red
 
-def minimax(node, depth, player, model):
+def minimax(node, depth, player, model, next_moves = None):
     if player == MAX:
-        return search_max(node, depth, float('-inf'), float('+inf'), model)
+        return search_max(node, depth, float('-inf'), float('+inf'), model, next_moves)
     else:
         return search_min(node, depth, float('-inf'), float('+inf'), model)
 
-def search_max(node, depth, alpha, beta, model):
-    # print('depth max', depth)
-    children = transition(node)
+def search_max(node, depth, alpha, beta, model, next_moves = None):
+    next_move = next_moves.pop(0) if next_moves else None
+    children = order_children(transition(node), MAX, False)
+    # children = transition(node)
     if depth == 0 or not children:
         return utility(MAX, node.state), None
 
     v = float('-inf')
     best_child = None
+    best_max_moves = None
     for child in children:
-        min_v, _ = search_min(child, depth - 1, alpha, beta, model)
-        if min_v > v:
+        if next_move and child.move != next_move:
+            continue
+
+        min_v, max_moves = search_min(child, depth - 1, alpha, beta, model)
+        if min_v > v or best_child is None:
             v = min_v
             best_child = child
+            best_max_moves = max_moves
 
         if beta <= v:
             # print('max pruned')
@@ -57,22 +69,23 @@ def search_max(node, depth, alpha, beta, model):
 
         alpha = max(alpha, v)
 
-    return v, best_child
+    return v, [best_child] + (best_max_moves or [])
 
-def search_min(node, depth, alpha, beta, model):
-    # print('depth min', depth)
-
-    children = transition(node)
+def search_min(node, depth, alpha, beta, model, next_moves = None):
+    children = order_children(transition(node), MIN, True)
+    # children = transition(node)
     if depth == 0 or not children:
         return utility(MIN, node.state), None
 
     v = float('inf')
     best_child = None
+    best_max_moves = None
     for child in children:
-        max_v, _ = search_max(child, depth - 1, alpha, beta, model)
+        max_v, max_moves = search_max(child, depth - 1, alpha, beta, model, next_moves)
         if max_v < v:
             v = max_v
             best_child = child
+            best_max_moves = max_moves
 
         if v <= alpha:
             # print('min pruned')
@@ -80,4 +93,4 @@ def search_min(node, depth, alpha, beta, model):
 
         beta = min(beta, v)
 
-    return v, best_child
+    return v, best_max_moves
