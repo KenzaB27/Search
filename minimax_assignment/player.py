@@ -10,8 +10,6 @@ from collections import Counter
 # import itertools.groupby
 
 TIMEOUT = 65*1e-3
-MAX_STATE_LOG = 8
-MAX_STATE_REPEATS = 4
 
 class PlayerControllerHuman(PlayerController):
     def player_loop(self):
@@ -109,15 +107,8 @@ class PlayerControllerMinimax(PlayerController):
 
         # initial_tree_node.move
 
-        ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player, model, self.next_moves.copy())
+        # ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player)
+        next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player)
+        print("best_move_done", next_state.move, file=sys.stderr)
 
-        for child in next_state:
-            if child and len(self.next_moves) < MAX_STATE_LOG:
-                self.next_moves.append(child.move)
-    
-        next_move = self.next_moves.pop(0)
-        counter = Counter(self.next_moves)
-        if max(counter.values()) >= MAX_STATE_REPEATS:
-            self.next_moves = []
-        
-        return ACTION_TO_STR[next_move]
+        return ACTION_TO_STR[next_state.move]
