@@ -57,7 +57,7 @@ def search_max(node, depth, alpha, beta, model, next_moves = None):
         if next_move and child.move != next_move:
             continue
 
-        min_v, max_moves = search_min(child, depth - 1, alpha, beta, model)
+        min_v, max_moves = search_min(child, depth - 1, alpha, beta, model, next_moves)
         if min_v > v or best_child is None:
             v = min_v
             best_child = child
@@ -72,6 +72,7 @@ def search_max(node, depth, alpha, beta, model, next_moves = None):
     return v, [best_child] + (best_max_moves or [])
 
 def search_min(node, depth, alpha, beta, model, next_moves = None):
+    next_move = next_moves.pop(0) if next_moves else None
     children = order_children(transition(node), MIN, True)
     # children = transition(node)
     if depth == 0 or not children:
@@ -81,6 +82,9 @@ def search_min(node, depth, alpha, beta, model, next_moves = None):
     best_child = None
     best_max_moves = None
     for child in children:
+        if next_move and child.move != next_move:
+            continue
+
         max_v, max_moves = search_max(child, depth - 1, alpha, beta, model, next_moves)
         if max_v < v:
             v = max_v
@@ -93,4 +97,5 @@ def search_min(node, depth, alpha, beta, model, next_moves = None):
 
         beta = min(beta, v)
 
-    return v, best_max_moves
+    return v, [best_child] + (best_max_moves or [])
+    # return v, best_max_moves

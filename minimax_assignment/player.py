@@ -9,9 +9,11 @@ from time import time
 from collections import Counter
 # import itertools.groupby
 
-TIMEOUT = 65*1e-3
+TIMEOUT = 60*1e-3
 MAX_STATE_LOG = 8
 MAX_STATE_REPEATS = 4
+INITIAL_DEPTH = 4
+MAX_DEPTH = 8
 
 class PlayerControllerHuman(PlayerController):
     def player_loop(self):
@@ -32,8 +34,8 @@ class PlayerControllerHuman(PlayerController):
 
 
 class PlayerControllerMinimax(PlayerController):
-    search_depth = 3
     next_moves = []
+    start_time = None
 
     def __init__(self):
         super(PlayerControllerMinimax, self).__init__()
@@ -50,6 +52,7 @@ class PlayerControllerMinimax(PlayerController):
         model = self.initialize_model(initial_data=first_msg)
 
         while True:
+            self.start_time = time()
             msg = self.receiver()
 
             # Create the root node of the game tree
@@ -109,15 +112,34 @@ class PlayerControllerMinimax(PlayerController):
 
         # initial_tree_node.move
 
-        ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player, model, self.next_moves.copy())
+        # ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player, model, self.next_moves.copy())
+        next_state = self.iterative_search(initial_tree_node, initial_tree_node.state.player, model)
+        self.next_moves = self.states_to_moves(next_state)
 
-        for child in next_state:
-            if child and len(self.next_moves) < MAX_STATE_LOG:
-                self.next_moves.append(child.move)
-    
-        next_move = self.next_moves.pop(0)
-        counter = Counter(self.next_moves)
-        if max(counter.values()) >= MAX_STATE_REPEATS:
-            self.next_moves = []
+        try:
+            next_move = self.next_moves.pop(0)
+        except:
+            next_move = random.randrange(5)
+            return ACTION_TO_STR[next_move]
+
+        # counter = Counter(self.next_moves)
+        # if counter and max(counter.values()) >= MAX_STATE_REPEATS:
+        #     self.next_moves = []
         
         return ACTION_TO_STR[next_move]
+
+    def states_to_moves(self, states):
+        return [state.move for state in states if state]
+
+    def iterative_search(self, root, player, model):
+        next_states = []
+        timeout = self.start_time + TIMEOUT
+
+        for depth in range(INITIAL_DEPTH, MAX_DEPTH, 1):
+            current_time = time()
+            if timeout - current_time < 0.05:
+                break
+
+            _, next_states = minimax(root, depth, player, model, self.states_to_moves(next_states) if next_states else None)
+        
+        return next_states
