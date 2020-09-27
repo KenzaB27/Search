@@ -109,6 +109,6 @@ class PlayerControllerMinimax(PlayerController):
 
         # ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player)
         next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player)
-        print("best_move_done", next_state.move, file=sys.stderr)
+        # print("best_move_done", next_state.move, file=sys.stderr)
 
         return ACTION_TO_STR[next_state.move]

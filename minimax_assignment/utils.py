@@ -16,10 +16,11 @@ SEARCH_CUT_OFF = False
 
 transposition_table = {}
 
-def order_children(children, player, desc):
-    # sorted_children = sorted(children, key=lambda child: child.state.get_player_scores()[0] - child.state.get_player_scores()[1], reverse=desc)
-    sorted_children = sorted(children, key=lambda child: utility(child.state), reverse=desc)
-    sorted_children = sorted(sorted_children, key=lambda child: child.move)
+
+def order_children(children, player):
+    desc = True if player == MAX else False
+    sorted_children = sorted(
+        children, key=lambda child: utility(child.state), reverse=desc)
     return sorted_children
 
 def transition(node):
@@ -43,7 +44,7 @@ def utility(state):
         fish_position = fish_positions[fish_id]
         d = abs(fish_position[0] - hook_position[0]) + \
             abs(fish_position[1] - hook_position[1])
-        if best_score - fish_scores[fish_id] <= 7 and min_distance > d:
+        if best_score - fish_scores[fish_id] <= 5 and min_distance > d:
             min_distance = d
             best_fish_id = fish_id
     # no good fish around
@@ -54,81 +55,19 @@ def utility(state):
     # print('heuristic', h)
     return h + score_green - score_red
 
-def minimax(node, depth, player, start_time):
-    if player == MAX:
-        return search_max(node, depth, -MAX_UTILITY, MAX_UTILITY, start_time)
-    else:
-        return search_min(node, depth, -MAX_UTILITY, MAX_UTILITY, start_time)
-
-def search_max(node, depth, alpha, beta, start_time):
-    children = order_children(transition(node), MAX, False)
-    # children = transition(node)
-    if depth == 0 or not children:
-        return utility(MAX, node.state), None
-
-    v = float('-inf')
-    best_child = None
-    for child in children:
-        if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
-            search_cut_off = True
-            break
-        min_v, max_moves = search_min(
-            child, depth - 1, alpha, beta, start_time)
-        if min_v > v:
-            v = min_v
-            best_child = child
-
-        if beta <= v:
-            # print('max pruned')
-            break
-
-        alpha = max(alpha, v)
-
-    return v, best_child
-
-def search_min(node, depth, alpha, beta, start_time):
-    
-
-    #classic search
-    children = order_children(transition(node), MIN, True)
-    # children = transition(node)
-    if depth == 0 or not children:
-        return utility(MIN, node.state), None
-    v = float('inf')
-    best_child = None
-    for child in children:
-        if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
-            search_cut_off = True
-            break
-        max_v, max_moves = search_max(
-            child, depth - 1, alpha, beta, start_time)
-        if max_v < v:
-            v = max_v
-            best_child = child
-
-        if v <= alpha:
-            # print('min pruned')
-            break
-
-        beta = min(beta, v)
-
-
-    return v, best_child
-
-
 def iterative_deepining_alpha_beta(node, player):
     best_node = None
     start_time = time.time()
     global SEARCH_CUT_OFF
-    for depth in  range(2, MAX_DEPTH):
+    for depth in  range(1, MAX_DEPTH):
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
-            print('TIMEOUT in IDS', file=sys.stderr)
+            # print('TIMEOUT in IDS', file=sys.stderr)
             break
         u, node = negamax(node, depth, float(
             '-inf'), float('inf'), player, start_time)
         if not SEARCH_CUT_OFF:
             utility, best_node = u, node
-        print('depth', depth,  'best_node', best_node, "best_move", best_node.move, file=sys.stderr)
+        # print('depth', depth,  'best_node', best_node, "best_move", best_node.move, file=sys.stderr)
     SEARCH_CUT_OFF = False
     return best_node
 
@@ -146,27 +85,27 @@ def negamax(node, depth, alpha, beta, player, start_time):
                 alpha = max(alpha, ttEntry.value)
             elif ttEntry['flag'] == UPPERBOUND:
                 beta = min(beta, ttEntry.value)
-    if alpha >= beta:
-        return ttEntry['value'], node
+            if alpha >= beta:
+                return ttEntry['value'], node
     
     # core of negamax
-    children = order_children(transition(node), player, 1-player)
+    children = order_children(transition(node), player)
     if depth == 0 or not children:
         color = 1 if player == MAX else -1
         return color * utility(node.state), None
     nega_value, nega_move = float('-inf'), None
     for child in children:
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
-            print('TIMEOUT in NEGAMAX', file=sys.stderr)
+            # print('TIMEOUT in NEGAMAX', file=sys.stderr)
             SEARCH_CUT_OFF = True
             break
-        value, _ = negamax(child, depth - 1, -beta, -alpha, 1 - player, start_time)
-        value = - value 
+        value, _ = negamax(child, depth - 1, -beta, -alpha, 1-player, start_time)
+        value = - value
         if value > nega_value:
             nega_value = value
             nega_move = child
         alpha = max(alpha, nega_value)
-        if alpha >= beta: 
+        if alpha >= beta:
             break
     # end of negamax 
 
