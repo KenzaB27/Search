@@ -10,6 +10,7 @@ from collections import Counter
 # import itertools.groupby
 
 TIMEOUT = 65*1e-3
+transposition_table = {}
 
 class PlayerControllerHuman(PlayerController):
     def player_loop(self):
@@ -52,11 +53,13 @@ class PlayerControllerMinimax(PlayerController):
 
             # Create the root node of the game tree
             node = Node(message=msg, player=0)
-
+            start_time = time()
             # Possible next moves: "stay", "left", "right", "up", "down"
             best_move = self.search_best_next_move(
                 model=model, initial_tree_node=node)
+            end_time = time()
 
+            print('time', end_time - start_time)
             # Execute next action
             self.sender({"action": best_move, "search_time": None})
 
@@ -106,9 +109,12 @@ class PlayerControllerMinimax(PlayerController):
         #       with its compute_and_get_children() method!
 
         # initial_tree_node.move
-
-        # ut, next_state = minimax(initial_tree_node, 4, initial_tree_node.state.player)
-        next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player)
+# negamax(node, depth, alpha, beta, player)
+        # ut, next_state = negamax(initial_tree_node, 4, float('-inf'), float('inf'), initial_tree_node.state.player)
+        next_state = iterative_deepining_alpha_beta(
+            initial_tree_node, initial_tree_node.state.player)
+        if not next_state:
+            return ACTION_TO_STR[0]
         # print("best_move_done", next_state.move, file=sys.stderr)
 
         return ACTION_TO_STR[next_state.move]

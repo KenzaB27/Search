@@ -9,8 +9,9 @@ MIN = 1
 EXACT = 0
 LOWERBOUND = -1 
 UPPERBOUND = 1
-MAX_ALLOWED_TIME_IN_SECONDS = 0.055
-MAX_DEPTH  = 8
+MAX_ALLOWED_TIME_IN_SECONDS = 0.065
+
+MAX_DEPTH  = 10
 MAX_UTILITY = float('inf')
 SEARCH_CUT_OFF = False
 
@@ -58,47 +59,49 @@ def utility(state):
 def iterative_deepining_alpha_beta(node, player):
     best_node = None
     start_time = time.time()
-    global SEARCH_CUT_OFF
+
     for depth in  range(1, MAX_DEPTH):
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
-            # print('TIMEOUT in IDS', file=sys.stderr)
             break
-        u, node = negamax(node, depth, float(
-            '-inf'), float('inf'), player, start_time)
-        if not SEARCH_CUT_OFF:
-            utility, best_node = u, node
-        # print('depth', depth,  'best_node', best_node, "best_move", best_node.move, file=sys.stderr)
-    SEARCH_CUT_OFF = False
+        try: 
+            print('BEGINING of NEGAMAX in IDS with depth:' , depth, file=sys.stderr)
+            _, n = negamax(node, depth, float('-inf'), float('inf'), player, start_time)
+            if n: 
+                best_node = n
+        except RuntimeError:
+            break
+    # print('depth', depth,  'best_node', best_node, "best_move", best_node.move, file=sys.stderr)
     return best_node
 
 
-def negamax(node, depth, alpha, beta, player, start_time):
-    global SEARCH_CUT_OFF
+def negamax(node, depth, alpha, beta, player, start_time = None):
     alphaOrig = alpha
     ttEntry = {}
-    if node in transposition_table.keys():
-        ttEntry = transposition_table[node]
+    state = node.state
+    if state in transposition_table.keys():
+        ttEntry = transposition_table[state]
+        print('ttEntry', ttEntry,  file=sys.stderr)
+        print('DEPTH is', depth,  file=sys.stderr)
         if ttEntry['depth'] >= depth:
             if ttEntry['flag'] == EXACT:
+                print('ttEntry Flag EXACT', file=sys.stderr)
                 return ttEntry['value'], node
             elif ttEntry['flag'] == LOWERBOUND:
-                alpha = max(alpha, ttEntry.value)
+                print('ttEntry Flag LOWERBOUND', file=sys.stderr)
+                alpha = max(alpha, ttEntry['value'])
             elif ttEntry['flag'] == UPPERBOUND:
-                beta = min(beta, ttEntry.value)
+                print('ttEntry Flag UPPERBOUND', file=sys.stderr)
+                beta = min(beta, ttEntry['value'])
             if alpha >= beta:
                 return ttEntry['value'], node
-    
-    # core of negamax
+    nega_value, nega_move = float('-inf'), None
     children = order_children(transition(node), player)
     if depth == 0 or not children:
         color = 1 if player == MAX else -1
-        return color * utility(node.state), None
-    nega_value, nega_move = float('-inf'), None
+        return color * utility(state), None
     for child in children:
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
-            # print('TIMEOUT in NEGAMAX', file=sys.stderr)
-            SEARCH_CUT_OFF = True
-            break
+            raise RuntimeError('Timeout')
         value, _ = negamax(child, depth - 1, -beta, -alpha, 1-player, start_time)
         value = - value
         if value > nega_value:
@@ -107,18 +110,18 @@ def negamax(node, depth, alpha, beta, player, start_time):
         alpha = max(alpha, nega_value)
         if alpha >= beta:
             break
-    # end of negamax 
 
-    ttEntry['value'] = nega_value
-    if nega_value <= alphaOrig:
-        ttEntry['flag'] = UPPERBOUND
-    elif nega_value >= beta:
-        ttEntry['flag'] = LOWERBOUND
-    else:
-        ttEntry['flag'] = EXACT
+    if node:
+        ttEntry['value'] = nega_value
+        if nega_value <= alphaOrig:
+            ttEntry['flag'] = UPPERBOUND
+        elif nega_value >= beta:
+            ttEntry['flag'] = LOWERBOUND
+        else:
+            ttEntry['flag'] = EXACT
+        ttEntry['depth'] = depth 
+        transposition_table[node.state] = ttEntry
 
-    ttEntry['depth'] = depth
-    transposition_table[node] = ttEntry
-    
     return nega_value, nega_move
+
 
