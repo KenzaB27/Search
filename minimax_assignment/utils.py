@@ -81,9 +81,10 @@ def iterative_deepening(root, player):
     best_move = None
     for depth in range(MAX_DEPTH):
         try:
-            first_guess, best_move = mtd(root, first_guess, depth, player, start_time)
+            # first_guess, best_move = mtd(root, first_guess, depth, player, start_time)
             # _, best_move = pvs(root, depth, float('-inf'), float('inf'), 1, start_time)
             # _, best_move = negascout(root, depth, float('-inf'), float('inf'), 1, start_time)
+            _, best_move = negascout2(root, depth, float('-inf'), float('inf'), 1, start_time)
         except SearchTimeout:
             break
     # print('max depth', depth)
@@ -121,7 +122,6 @@ def pvs(node, depth, alpha, beta, color, start_time):
     return alpha, best_child
 
 # https://www.chessprogramming.org/NegaScout
-# https://www.researchgate.net/figure/NegaScout-Algorithm-Pseudo-Code-Using-the-Minimal-Window-Search-Principle_fig5_262672371
 def negascout(node, depth, alpha, beta, color, start_time):
     if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
         raise SearchTimeout('Timeout')
@@ -146,6 +146,38 @@ def negascout(node, depth, alpha, beta, color, start_time):
         b = alpha + 1
     return alpha, best_child
 
+# https://www.researchgate.net/figure/NegaScout-Algorithm-Pseudo-Code-Using-the-Minimal-Window-Search-Principle_fig5_262672371
+def negascout2(node, depth, alpha, beta, color, start_time):
+    if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+        raise SearchTimeout('Timeout')
+
+    children = order_children(transition(node), MAX if color > 0 else MIN)
+
+    if depth == 0 or not children:
+        return color * utility(node.state), None
+
+    score = float('-inf')
+    n = beta
+    best_child = None
+    for child in children:
+        cur, _ = negascout2(child, depth - 1, -n, -alpha, -color, start_time)
+        cur *= -1
+
+        if cur > score:
+            if n == beta or depth <= 2:
+                score = cur
+            else:
+                score, _ = negascout2(child, depth - 1, -beta, -cur, -color, start_time)
+                score *= -1
+        
+        if score > alpha:
+            alpha = score
+            best_child = child
+        
+        if alpha >= beta:
+            break
+        n = alpha + 1
+    return score, best_child
 
 def iterative_deepining_alpha_beta(node, player):
     best_node = None
