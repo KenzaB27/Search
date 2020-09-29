@@ -59,6 +59,145 @@ def utility(state):
     return h + score_green - score_red
 
 
+# https://www.chessprogramming.org/MTD(f)
+def mtd(node, first_guess, depth, player, start_time):
+    best_guess = first_guess
+    best_move = None
+    upper_bound = float('inf')
+    lower_bound = float('-inf')
+
+    while lower_bound < upper_bound:
+        beta = max(best_guess, lower_bound + 1)
+        best_guess, best_move = negamax(
+            node, depth, beta - 1, beta, player, start_time)
+
+        if best_guess < beta:
+            upper_bound = best_guess
+        else:
+            lower_bound = best_guess
+    return best_guess, best_move
+
+
+def iterative_deepening(root, player):
+    start_time = time.time()
+    first_guess = 0
+    best_move = None
+    for depth in range(MAX_DEPTH):
+        try:
+            # first_guess, best_move = mtd(root, first_guess, depth, player, start_time)
+            # _, best_move = pvs(root, depth, float('-inf'), float('inf'), 1, start_time)
+            # _, best_move = negascout(root, depth, float('-inf'), float('inf'), 1, start_time)
+            _, best_move = negascout2(root, depth, float(
+                '-inf'), float('inf'), 1, start_time)
+        except SearchTimeout:
+            break
+    # print('max depth', depth)
+    return best_move
+
+
+# https://en.wikipedia.org/wiki/Principal_variation_search
+def pvs(node, depth, alpha, beta, color, start_time):
+    if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+        raise SearchTimeout('Timeout')
+
+    children = order_children(transition(node), MAX if color > 0 else MIN)
+
+    if depth == 0 or not children:
+        return color * utility(node.state), None
+
+    score = None
+    best_child = None
+
+    for child in children:
+        if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+            raise SearchTimeout('Timeout')
+        if not score:
+            score = -1 * pvs(node, depth - 1, -beta, -
+                             alpha, -color, start_time)[0]
+        else:
+            score = -1 * pvs(child, depth - 1, -alpha - 1, -
+                             alpha, -color, start_time)[0]
+            if alpha < score < beta:
+                score = -1 * pvs(child, depth - 1, -beta, -
+                                 1 * score, -color, start_time)[0]
+
+        if score > alpha:
+            alpha = score
+            best_child = child
+
+        if alpha >= beta:
+            break
+
+    return alpha, best_child
+
+# https://www.chessprogramming.org/NegaScout
+
+
+def negascout(node, depth, alpha, beta, color, start_time):
+    if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+        raise SearchTimeout('Timeout')
+
+    children = order_children(transition(node), MAX if color > 0 else MIN)
+
+    if depth == 0 or not children:
+        return color * utility(node.state), None
+
+    b = beta
+    best_child = None
+    for child in children:
+        if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+            raise SearchTimeout('Timeout')
+        t, _ = negascout(child, depth - 1, -b, -alpha, -color, start_time)
+        t *= -1
+
+        if t > alpha:
+            alpha = t
+            best_child = child
+
+        if alpha >= beta:
+            break
+        b = alpha + 1
+    return alpha, best_child
+
+# https://www.researchgate.net/figure/NegaScout-Algorithm-Pseudo-Code-Using-the-Minimal-Window-Search-Principle_fig5_262672371
+
+
+def negascout2(node, depth, alpha, beta, color, start_time):
+    if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+        raise SearchTimeout('Timeout')
+
+    children = order_children(transition(node), MAX if color > 0 else MIN)
+
+    if depth == 0 or not children:
+        return color * utility(node.state), None
+
+    score = float('-inf')
+    n = beta
+    best_child = None
+    for child in children:
+        if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+            raise SearchTimeout('Timeout')
+        cur, _ = negascout2(child, depth - 1, -n, -alpha, -color, start_time)
+        cur *= -1
+
+        if cur > score:
+            if n == beta or depth <= 2:
+                score = cur
+            else:
+                score, _ = negascout2(
+                    child, depth - 1, -beta, -cur, -color, start_time)
+                score *= -1
+
+        if score > alpha:
+            alpha = score
+            best_child = child
+
+        if alpha >= beta:
+            break
+        n = alpha + 1
+    return score, best_child
+
+
 def iterative_deepining_alpha_beta(node, player):
     best_node = None
     start_time = time.time()
@@ -66,12 +205,14 @@ def iterative_deepining_alpha_beta(node, player):
     for depth in range(1, MAX_DEPTH):
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
             break
-        try: 
+        try:
             # print('BEGINING of NEGAMAX in IDS with depth:' , depth, file=sys.stderr)
             # _, n = negamax(node, depth, float('-inf'), float('inf'), player, start_time)
             # _, n = pvs(node, depth, float('-inf'), float('inf'), 1, start_time)
-            _, n = negascout(node, depth, float('-inf'), float('inf'), 1, start_time)
-            if n: 
+            first_guess, n = mtd(node, first_guess, depth, player, start_time)
+            # _, n = negascout(node, depth, float('-inf'),
+            #                  float('inf'), 1, start_time)
+            if n:
                 best_node = n
         except SearchTimeout:
             break
@@ -79,7 +220,7 @@ def iterative_deepining_alpha_beta(node, player):
     return best_node
 
 
-def negamax(node, depth, alpha, beta, player, start_time = None):
+def negamax(node, depth, alpha, beta, player, start_time=None):
     if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
         raise SearchTimeout('Timeout')
 
@@ -103,7 +244,7 @@ def negamax(node, depth, alpha, beta, player, start_time = None):
                 beta = min(beta, ttEntry['value'])
             if alpha >= beta:
                 return ttEntry['value'], node
-                
+
     nega_value, nega_move = float('-inf'), None
     children = order_children(transition(node), player)
 
@@ -115,7 +256,8 @@ def negamax(node, depth, alpha, beta, player, start_time = None):
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
             raise SearchTimeout('Timeout')
 
-        value, _ = negamax(child, depth - 1, -beta, -alpha, 1-player, start_time)
+        value, _ = negamax(child, depth - 1, -beta, -
+                           alpha, 1-player, start_time)
         value = - value
 
         if value > nega_value:
@@ -126,15 +268,15 @@ def negamax(node, depth, alpha, beta, player, start_time = None):
         if alpha >= beta:
             break
 
-    ttEntry['value'] = nega_value
-    if nega_value <= alphaOrig:
-        ttEntry['flag'] = UPPERBOUND
-    elif nega_value >= beta:
-        ttEntry['flag'] = LOWERBOUND
-    else:
-        ttEntry['flag'] = EXACT
-
-    ttEntry['depth'] = depth
-    transposition_table[state] = ttEntry
+    if node:
+        ttEntry['value'] = nega_value
+        if nega_value <= alphaOrig:
+            ttEntry['flag'] = UPPERBOUND
+        elif nega_value >= beta:
+            ttEntry['flag'] = LOWERBOUND
+        else:
+            ttEntry['flag'] = EXACT
+        ttEntry['depth'] = depth
+        transposition_table[node.state] = ttEntry
 
     return nega_value, nega_move

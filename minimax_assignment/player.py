@@ -5,7 +5,7 @@ from fishing_game_core.game_tree import Node
 from fishing_game_core.player_utils import PlayerController
 from fishing_game_core.shared import ACTION_TO_STR
 from utils import *
-from utils_minimax import *
+# from utils_minimax import *
 from time import time
 from collections import Counter
 # import itertools.groupby
@@ -111,8 +111,8 @@ class PlayerControllerMinimax(PlayerController):
         # ut, next_state = negamax(initial_tree_node, 4, float('-inf'), float('inf'), initial_tree_node.state.player)
         # _, next_state = minimax(initial_tree_node, 4,
         #                         initial_tree_node.state.player)
-        # next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player)
-        next_state = iterative_deepining_alpha_beta_minimax(initial_tree_node, initial_tree_node.state.player)
+        next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player)
+        # next_state = iterative_deepining_alpha_beta_minimax(initial_tree_node, initial_tree_node.state.player)
         # if not next_state:
         #     return ACTION_TO_STR[random.randint(0, 7)]
         # print("best_move_done", next_state.move, file=sys.stderr)
