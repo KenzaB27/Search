@@ -9,7 +9,7 @@ MIN = 1
 EXACT = 0
 LOWERBOUND = -1 
 UPPERBOUND = 1
-MAX_ALLOWED_TIME_IN_SECONDS = 0.065
+MAX_ALLOWED_TIME_IN_SECONDS = 0.060
 
 MAX_DEPTH  = 10
 MAX_UTILITY = float('inf')
@@ -56,44 +56,94 @@ def utility(state):
     # print('heuristic', h)
     return h + score_green - score_red
 
+
 def iterative_deepining_alpha_beta(node, player):
     best_node = None
     start_time = time.time()
 
-    for depth in  range(1, MAX_DEPTH):
+    for depth in range(1, MAX_DEPTH):
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
             break
-        try: 
-            print('BEGINING of NEGAMAX in IDS with depth:' , depth, file=sys.stderr)
-            _, n = negamax(node, depth, float('-inf'), float('inf'), player, start_time)
-            if n: 
-                best_node = n
+        try:
+            _, best_node = negamax(node, depth, float(
+                '-inf'), float('inf'), player, start_time)
         except RuntimeError:
             break
-    # print('depth', depth,  'best_node', best_node, "best_move", best_node.move, file=sys.stderr)
+
+    print('depth', depth,  'best_node', best_node,
+          "best_move", best_node.move, file=sys.stderr)
     return best_node
 
 
-def negamax(node, depth, alpha, beta, player, start_time = None):
+def negamax_without_TT(node, depth, alpha, beta, player, start_time = None):
+
+    children = order_children(transition(node), player)
+    if depth == 0 or not children:
+        color = 1 if player == MAX else -1
+        return color * utility(node.state), None
+    nega_value, nega_move = float('-inf'), None
+    for child in children:
+        # if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+        #     raise RuntimeError('Timeout')
+        value, _ = negamax(child, depth - 1, -beta, -alpha, 1-player)
+        value = - value
+        if value > nega_value:
+            nega_value = value
+            nega_move = child
+        alpha = max(alpha, nega_value)
+        if alpha >= beta:
+            break
+    return nega_value, nega_move
+
+
+def pvs (node, depth, alpha, beta, player, start_time):
+
+    children = order_children(transition(node), player)
+    if depth == 0 or not children:
+        color = 1 if player == MAX else -1
+        return color * utility(node.state), None
+    nega_value, nega_move = float('-inf'), None
+    if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+        raise RuntimeError('Timeout')
+    value, _ = pvs(children[0], depth - 1, -beta, -alpha, 1-player, start_time)
+    value = - value
+    for i in range(len(children)):
+        if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+            raise RuntimeError('Timeout')
+        value, _ = pvs(child, depth - 1, -alpha-1, -alpha, 1-player, start_time)
+        value = - value
+        if alpha < value and value < beta:
+            value, _ = pvs(child, depth - 1, -beta, -value, 1-player, start_time)
+            value = - value
+        alpha = max(alpha, value)
+        if value > alpha:
+            nega_value = value
+            nega_move = child
+
+        
+        if alpha >= beta:
+            break
+
+    return nega_value, nega_move
+
+
+def negamax(node, depth, alpha, beta, player, start_time):
+
     alphaOrig = alpha
     ttEntry = {}
     state = node.state
     if state in transposition_table.keys():
         ttEntry = transposition_table[state]
-        print('ttEntry', ttEntry,  file=sys.stderr)
-        print('DEPTH is', depth,  file=sys.stderr)
         if ttEntry['depth'] >= depth:
             if ttEntry['flag'] == EXACT:
-                print('ttEntry Flag EXACT', file=sys.stderr)
                 return ttEntry['value'], node
             elif ttEntry['flag'] == LOWERBOUND:
-                print('ttEntry Flag LOWERBOUND', file=sys.stderr)
-                alpha = max(alpha, ttEntry['value'])
+                alpha = max(alpha, ttEntry.value)
             elif ttEntry['flag'] == UPPERBOUND:
-                print('ttEntry Flag UPPERBOUND', file=sys.stderr)
-                beta = min(beta, ttEntry['value'])
+                beta = min(beta, ttEntry.value)
             if alpha >= beta:
                 return ttEntry['value'], node
+
     nega_value, nega_move = float('-inf'), None
     children = order_children(transition(node), player)
     if depth == 0 or not children:
@@ -102,7 +152,8 @@ def negamax(node, depth, alpha, beta, player, start_time = None):
     for child in children:
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
             raise RuntimeError('Timeout')
-        value, _ = negamax(child, depth - 1, -beta, -alpha, 1-player, start_time)
+        value, _ = negamax(child, depth - 1, -beta, -
+                           alpha, 1-player, start_time)
         value = - value
         if value > nega_value:
             nega_value = value
@@ -111,17 +162,15 @@ def negamax(node, depth, alpha, beta, player, start_time = None):
         if alpha >= beta:
             break
 
-    if node:
-        ttEntry['value'] = nega_value
-        if nega_value <= alphaOrig:
-            ttEntry['flag'] = UPPERBOUND
-        elif nega_value >= beta:
-            ttEntry['flag'] = LOWERBOUND
-        else:
-            ttEntry['flag'] = EXACT
-        ttEntry['depth'] = depth 
-        transposition_table[node.state] = ttEntry
+    ttEntry['value'] = nega_value
+    if nega_value <= alphaOrig:
+        ttEntry['flag'] = UPPERBOUND
+    elif nega_value >= beta:
+        ttEntry['flag'] = LOWERBOUND
+    else:
+        ttEntry['flag'] = EXACT
+
+    ttEntry['depth'] = depth
+    transposition_table[state] = ttEntry
 
     return nega_value, nega_move
-
-

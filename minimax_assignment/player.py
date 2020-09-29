@@ -5,6 +5,7 @@ from fishing_game_core.game_tree import Node
 from fishing_game_core.player_utils import PlayerController
 from fishing_game_core.shared import ACTION_TO_STR
 from utils import *
+from utils_minimax import *
 from time import time
 from collections import Counter
 # import itertools.groupby
@@ -53,13 +54,13 @@ class PlayerControllerMinimax(PlayerController):
 
             # Create the root node of the game tree
             node = Node(message=msg, player=0)
-            start_time = time()
+            # start_time = time()
             # Possible next moves: "stay", "left", "right", "up", "down"
             best_move = self.search_best_next_move(
                 model=model, initial_tree_node=node)
-            end_time = time()
+            # end_time = time()
 
-            print('time', end_time - start_time)
+            # print('time', end_time - start_time, file= sys.stderr)
             # Execute next action
             self.sender({"action": best_move, "search_time": None})
 
@@ -111,10 +112,12 @@ class PlayerControllerMinimax(PlayerController):
         # initial_tree_node.move
 # negamax(node, depth, alpha, beta, player)
         # ut, next_state = negamax(initial_tree_node, 4, float('-inf'), float('inf'), initial_tree_node.state.player)
-        next_state = iterative_deepining_alpha_beta(
-            initial_tree_node, initial_tree_node.state.player)
-        if not next_state:
-            return ACTION_TO_STR[0]
+        # _, next_state = minimax(initial_tree_node, 4,
+        #                         initial_tree_node.state.player)
+        # next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player)
+        next_state = iterative_deepining_alpha_beta_minimax(initial_tree_node, initial_tree_node.state.player)
+        # if not next_state:
+        #     return ACTION_TO_STR[random.randint(0, 7)]
         # print("best_move_done", next_state.move, file=sys.stderr)
 
         return ACTION_TO_STR[next_state.move]
