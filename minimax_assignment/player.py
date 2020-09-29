@@ -10,9 +10,6 @@ from time import time
 from collections import Counter
 # import itertools.groupby
 
-TIMEOUT = 65*1e-3
-transposition_table = {}
-
 class PlayerControllerHuman(PlayerController):
     def player_loop(self):
         """
@@ -54,15 +51,15 @@ class PlayerControllerMinimax(PlayerController):
 
             # Create the root node of the game tree
             node = Node(message=msg, player=0)
-            # start_time = time()
+            start_time = time()
             # Possible next moves: "stay", "left", "right", "up", "down"
             best_move = self.search_best_next_move(
                 model=model, initial_tree_node=node)
-            # end_time = time()
+            end_time = time()
 
             # print('time', end_time - start_time, file= sys.stderr)
             # Execute next action
-            self.sender({"action": best_move, "search_time": None})
+            self.sender({"action": best_move, "search_time": end_time - start_time})
 
     def initialize_model(self, initial_data):
         """
