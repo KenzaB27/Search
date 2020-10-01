@@ -4,10 +4,9 @@ import random
 from fishing_game_core.game_tree import Node
 from fishing_game_core.player_utils import PlayerController
 from fishing_game_core.shared import ACTION_TO_STR
-from utils import *
+from newutils import *
 # from utils_minimax import *
 from time import time
-from collections import Counter
 # import itertools.groupby
 
 class PlayerControllerHuman(PlayerController):
@@ -45,7 +44,6 @@ class PlayerControllerMinimax(PlayerController):
         first_msg = self.receiver()
         # Initialize your minimax model
         model = self.initialize_model(initial_data=first_msg)
-
         while True:
             msg = self.receiver()
 
@@ -78,16 +76,9 @@ class PlayerControllerMinimax(PlayerController):
 
         Please note that the number of fishes and their types is not fixed between test cases.
         """
-        if initial_data['game_over']:
-            return {}
-
-        minimax_model = {}
-        for key in initial_data:
-            if key != 'game_over':
-                fish_id = int(key.replace('fish', ''))
-                minimax_model[fish_id] = initial_data[key]
+        zobrist_table = init_zobrist(initial_data)
         # EDIT THIS METHOD TO RETURN A MINIMAX MODEL ###
-        return minimax_model
+        return zobrist_table
 
     def search_best_next_move(self, model, initial_tree_node):
         """
@@ -111,10 +102,14 @@ class PlayerControllerMinimax(PlayerController):
         # ut, next_state = negamax(initial_tree_node, 4, float('-inf'), float('inf'), initial_tree_node.state.player)
         # _, next_state = minimax(initial_tree_node, 4,
         #                         initial_tree_node.state.player)
-        next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player)
+        # next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player, model)
+        # print('move', next_state, file = sys.stderr)
         # next_state = iterative_deepining_alpha_beta_minimax(initial_tree_node, initial_tree_node.state.player)
+        next_state = iterative_deepining_search(
+            initial_tree_node, initial_tree_node.state.player, model)
+        # next_state = iterative_deepining(initial_tree_node, initial_tree_node.state.player)
         # if not next_state:
         #     return ACTION_TO_STR[random.randint(0, 7)]
         # print("best_move_done", next_state.move, file=sys.stderr)
 
-        return ACTION_TO_STR[next_state.move]
+        return ACTION_TO_STR[next_state]
