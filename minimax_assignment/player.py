@@ -5,9 +5,7 @@ from fishing_game_core.game_tree import Node
 from fishing_game_core.player_utils import PlayerController
 from fishing_game_core.shared import ACTION_TO_STR
 from newutils import *
-# from utils_minimax import *
 from time import time
-# import itertools.groupby
 
 class PlayerControllerHuman(PlayerController):
     def player_loop(self):
@@ -28,8 +26,7 @@ class PlayerControllerHuman(PlayerController):
 
 
 class PlayerControllerMinimax(PlayerController):
-    search_depth = 3
-    next_moves = []
+    start_time = None
 
     def __init__(self):
         super(PlayerControllerMinimax, self).__init__()
@@ -49,7 +46,7 @@ class PlayerControllerMinimax(PlayerController):
 
             # Create the root node of the game tree
             node = Node(message=msg, player=0)
-            start_time = time()
+            self.start_time = time()
             # Possible next moves: "stay", "left", "right", "up", "down"
             best_move = self.search_best_next_move(
                 model=model, initial_tree_node=node)
@@ -57,7 +54,7 @@ class PlayerControllerMinimax(PlayerController):
 
             # print('time', end_time - start_time, file= sys.stderr)
             # Execute next action
-            self.sender({"action": best_move, "search_time": end_time - start_time})
+            self.sender({"action": best_move, "search_time": end_time - self.start_time})
 
     def initialize_model(self, initial_data):
         """
@@ -105,8 +102,8 @@ class PlayerControllerMinimax(PlayerController):
         # next_state = iterative_deepining_alpha_beta(initial_tree_node, initial_tree_node.state.player, model)
         # print('move', next_state, file = sys.stderr)
         # next_state = iterative_deepining_alpha_beta_minimax(initial_tree_node, initial_tree_node.state.player)
-        next_state = iterative_deepining_search(
-            initial_tree_node, initial_tree_node.state.player, model)
+        next_state = iterative_deepining_new(
+            initial_tree_node, initial_tree_node.state.player, model, self.start_time)
         # next_state = iterative_deepining(initial_tree_node, initial_tree_node.state.player)
         # if not next_state:
         #     return ACTION_TO_STR[random.randint(0, 7)]

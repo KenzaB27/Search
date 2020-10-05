@@ -6,7 +6,7 @@ import sys
 
 MIN, MAX = 1, 0
 LOWERBOUND, EXACT, UPPERBOUND = -1, 0, 1
-MAX_ALLOWED_TIME_IN_SECONDS = 0.050
+MAX_ALLOWED_TIME_IN_SECONDS = 0.056
 
 MAX_DEPTH = 20
 INFINITY = float('inf')
@@ -64,25 +64,30 @@ def utility(state, initial_score):
     return h + score_green - score_red 
 
 
-def iterative_deepining_new(node, player, zobrist_table):
+def iterative_deepining_new(node, player, zobrist_table, start_time):
     best_move = None
     best_val = - INFINITY
-    start_time = time.time()
+    # start_time = time.time()
     initial_score = node.state.get_player_scores()
-    children = transition(node)
-    for depth in range(1, MAX_DEPTH):
+    try:
+        children = transition(node)
         if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
-            break
-        for child in children: 
-            try:
-                val = - negamax_zobrist(child, depth, -INFINITY, INFINITY,
+            raise SearchTimeout
+        children = order_children(children, start_time, initial_score)
+        for depth in range(1, MAX_DEPTH):
+            if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+                raise SearchTimeout
+            for child in children: 
+                if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+                    raise SearchTimeout
+                val = - negamax_zobrist(child, depth, -100, 100,
                                         1-player, start_time, zobrist_table, initial_score)
                 # val = negamax(child, depth, -INFINITY, INFINITY, player, start_time)
                 if val > best_val:
                     best_val = val
                     best_move = child.move
-            except SearchTimeout:
-                break
+    except SearchTimeout:
+        pass
     return best_move
 
 
@@ -107,7 +112,10 @@ def negamax_zobrist(node, depth, alpha, beta, player, start_time, zobrist_table,
                 return ttEntry['value']
 
     nega_value = -INFINITY
-    children = order_children(transition(node), start_time, initial_score)
+    children = transition(node)
+    if time.time() - start_time > MAX_ALLOWED_TIME_IN_SECONDS:
+        raise SearchTimeout('Timeout')
+    children = order_children(children, start_time, initial_score)
     
     if depth == 0 or not children:
         color = 1 if player == MAX else -1
